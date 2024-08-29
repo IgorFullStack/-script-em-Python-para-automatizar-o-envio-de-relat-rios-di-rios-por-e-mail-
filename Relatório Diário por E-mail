@@ -1,0 +1,59 @@
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+import schedule
+import time
+
+# Configurações do e-mail
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USER = 'seuemail@gmail.com'
+EMAIL_PASSWORD = 'suasenha'
+EMAIL_FROM = 'seuemail@gmail.com'
+EMAIL_TO = 'destinatario@exemplo.com'
+EMAIL_SUBJECT = 'Relatório Diário'
+
+# Função para enviar o e-mail
+def enviar_email():
+    # Cria o objeto da mensagem
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_FROM
+    msg['To'] = EMAIL_TO
+    msg['Subject'] = EMAIL_SUBJECT
+
+    # Corpo do e-mail
+    corpo_email = 'Olá,\n\nSegue em anexo o relatório diário.\n\nAtenciosamente,\nSua Empresa'
+    msg.attach(MIMEText(corpo_email, 'plain'))
+
+    # Anexo
+    nome_arquivo = 'relatorio_diario.pdf'
+    try:
+        with open(nome_arquivo, 'rb') as arquivo:
+            parte_anexo = MIMEBase('application', 'octet-stream')
+            parte_anexo.set_payload(arquivo.read())
+            encoders.encode_base64(parte_anexo)
+            parte_anexo.add_header('Content-Disposition', f'attachment; filename= {nome_arquivo}')
+            msg.attach(parte_anexo)
+    except FileNotFoundError:
+        print(f'Arquivo {nome_arquivo} não encontrado.')
+
+    # Envia o e-mail
+    try:
+        servidor = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+        servidor.starttls()
+        servidor.login(EMAIL_USER, EMAIL_PASSWORD)
+        servidor.send_message(msg)
+        servidor.quit()
+        print('E-mail enviado com sucesso!')
+    except Exception as e:
+        print(f'Falha ao enviar e-mail: {e}')
+
+# Agendar o envio diário
+schedule.every().day.at("08:00").do(enviar_email)
+
+# Loop de agendamento
+while True:
+    schedule.run_pending()
+    time.sleep(60)  # Espera um minuto
